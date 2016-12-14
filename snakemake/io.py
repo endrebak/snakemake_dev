@@ -740,18 +740,21 @@ class Namedlist(list):
 
     def allitems(self):
         next = 0
+        counter = -1 # to give unnamed list items a name
         for name, index in sorted(self._names.items(),
                                   key=lambda item: item[1][0]):
             start, end = index
             if end is None:
                 end = start + 1
             if start > next:
-                for number, item in enumerate(self[next:start]):
-                    yield number, item
+                for item in self[next:start]:
+                    counter =+ 1
+                    yield str(counter), item
             yield name, getattr(self, name)
             next = end
         for item in self[next:]:
-            yield None, item
+            counter =+ 1
+            yield str(counter), item
 
     def insert_items(self, index, items):
         self[index:index + 1] = items
