@@ -4,6 +4,16 @@ configfile: "config.yaml"
 
 rule:
     input:
+        "test.out"
+    output:
+        txt="test.out2"
+    params:
+        xy=True
+    script:
+        "scripts/test.sh"
+
+rule:
+    input:
         "test.in"
     output:
         txt="test.out"
@@ -17,3 +27,4 @@ rule:
         "test.in"
     script:
         "scripts/test.py"
+

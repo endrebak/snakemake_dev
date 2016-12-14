@@ -179,14 +179,17 @@ Although there are other strategies to invoke separate scripts from your workflo
 the script logic is separated from the workflow logic (and can be even shared between workflows),
 but boilerplate code like the parsing of command line arguments in unnecessary.
 
-Apart from Python scripts, it is also possible to use R scripts. In R scripts,
-an S4 object named ``snakemake`` analog to the Python case above is available and
+Apart from Python scripts, it is also possible to use R scripts and shell (.sh) scripts. 
+
+In R scripts, an S4 object named ``snakemake`` analog to the Python case above is available and
 allows access to input and output files and other parameters. Here the syntax
 follows that of S4 classes with attributes that are R lists, e.g. we can access
 the first input file with ``snakemake@input[[1]]`` (note that the first file does
 not have index 0 here, because R starts counting from 1). Named input and output
 files can be accessed in the same way, by just providing the name instead of an
 index, e.g. ``snakemake@input[["myfile"]]``.
+
+In shell scripts you can use the function SNAKEMAKE. For named inputs you just write ``$(SNAKEMAKE 'input.bam_file')`` to access the file called bam_file, and for unnamed inputs, you just write the index of the file you want in quotes: ``$(SNAKEMAKE 'output."0"')``. Elements of lists can be accessed by appending the name of the list with square brackets and the 0-based index: ``$(SNAKEMAKE 'input.file_list[1]')``.
 
 For details and examples, see the :ref:`snakefiles-external_scripts` section in the Documentation.
 

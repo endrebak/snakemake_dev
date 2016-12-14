@@ -13,6 +13,8 @@ import traceback
 import subprocess
 import collections
 import re
+import json
+import stat
 from urllib.request import urlopen
 from urllib.error import URLError
 
@@ -27,6 +29,28 @@ PY_VER_RE = re.compile("Python (?P<ver_min>\d+\.\d+).*:")
 # TODO use this to find the right place for inserting the preamble
 PY_PREAMBLE_RE = re.compile(r"from( )+__future__( )+import.*?(?P<end>[;\n])")
 
+class JSONEncoder:
+    """Encoding Pyton data structures into JSON."""
+    
+    @classmethod
+    def encode_value(cls, value):
+        if isinstance(value, (str, dict, bool, int, float)):
+            return json.dumps(value)
+        elif isinstance(value, collections.Iterable):
+            # convert all iterables to vectors
+            # ( calling str on v because it seems like it fails if the iterable contains
+            # numpy numbers )
+            return json.dumps([str(v) for v in value])
+
+        raise ValueError(
+            "Unsupported value for conversion into shell: {}".format(value))
+
+    @classmethod
+    def encode_namedlist(cls, namedlist):
+        # this method can also take a namedlist with params which might be an arbitrary
+        # Python object so json.dumps might fail
+        namedlist_dict = {k: v for k, v in namedlist.allitems()}
+        return json.dumps(namedlist_dict)
 
 class REncoder:
     """Encoding Pyton data structures into R."""
@@ -216,9 +240,39 @@ def script(path, basedir, input, output, params, wildcards, threads, resources,
                                for name, value in resources.items()
                                if name != "_cores" and name != "_nodes"
                            }), REncoder.encode_dict(config), REncoder.encode_value(rulename))
+            elif path.endswith(".sh"):
+                preamble = textwrap.dedent(r"""
+                SNAKEMAKE_JSON='{{"input": {}, 
+                                 "output": {},
+                                 "params": {},
+                                 "wildcards": {},
+                                 "threads": {},
+                                 "log": {},
+                                 "resources": {},
+                                 "config": {},
+                                 "rule": {}}}'
+
+                if ! type jq > /dev/null ; then
+                  echo "The Snakemake script directive requires jq to run .sh scripts."
+                  exit 1
+                fi
+ 
+                SNAKEMAKE ()
+                {{
+                    echo $SNAKEMAKE_JSON | jq -r .$1 
+                }}
+                """).format(JSONEncoder.encode_namedlist(input),
+                            JSONEncoder.encode_namedlist(output),
+                            JSONEncoder.encode_namedlist(params),
+                            JSONEncoder.encode_namedlist(wildcards),
+                            str(threads),
+                            JSONEncoder.encode_namedlist(log),
+                            JSONEncoder.encode_value(resources),
+                            JSONEncoder.encode_value(config),
+                            JSONEncoder.encode_value(rulename)).replace("'", "\'")
             else:
                 raise ValueError(
-                    "Unsupported script: Expecting either Python (.py) or R (.R) script.")
+                    "Unsupported script: Expecting either Python (.py), R (.R) or shell (.sh) script.")
 
             dir = ".snakemake/scripts"
             os.makedirs(dir, exist_ok=True)
@@ -251,7 +305,12 @@ def script(path, basedir, input, output, params, wildcards, threads, resources,
                 shell("{py_exec} {f.name}")
             elif path.endswith(".R"):
                 shell("Rscript {f.name}")
+            elif path.endswith(".sh"):
+                st = os.stat(f.name)
+                os.chmod(f.name, st.st_mode | stat.S_IEXEC)
+                shell(f.name)
             os.remove(f.name)
+
 
     except URLError as e:
         raise WorkflowError(e)
