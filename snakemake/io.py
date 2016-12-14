@@ -746,8 +746,8 @@ class Namedlist(list):
             if end is None:
                 end = start + 1
             if start > next:
-                for item in self[next:start]:
-                    yield None, item
+                for number, item in enumerate(self[next:start]):
+                    yield number, item
             yield name, getattr(self, name)
             next = end
         for item in self[next:]:
