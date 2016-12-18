@@ -80,7 +80,7 @@ To create a Pull Request you need to do these steps:
 8. To commit the added files use `git commit`. (This will open a command line editor to write a commit message. These should have a descriptive 80 line header, followed by an empty line, and then a description of what you did and why. To use your command line text editor of choice use (for example) `export GIT_EDITOR=vim` before running `git commit`).
 9. Now you can push your changes to your Bitbucket copy of Snakemake by running `git push origin <descriptive_branch_name>`.
 10. If you now go to the webpage for your Bitbucket copy of Snakemake you should see a link in the sidebar called "Create Pull Request".
-11. Now you need to choose your PR from the menu and click the "Create pull request" button.
+11. Now you need to choose your PR from the menu and click the "Create pull request" button. Be sure to change the pull request target branch to <descriptive_branch_name>!
 
 If you want to create more pull requests, first run `git checkout master` and then start at step 5. with a new branch name.
 
@@ -92,14 +92,22 @@ Testing Guidelines
 
 To ensure that you do not introduce bugs into Snakemake, you should test your code thouroughly.
 
-The easiest way to run your development version of Snakemake is perhaps to go to the folder containing your local copy of Snakemake and call `pip install -e .`. This will make your development version of Snakemake the one called when running snakemake. You do not need to run this command after each time you make code changes.
+To have integration tests run automatically when commiting code changes to bitbucket, you need to sign up on wercker.com and register a user.
 
-From the base snakemake folder you call `python tests/tests.py` to run all the tests. (If it complains that you do not have the nose installed, which is the testing framework we use, you can simply install it by running `pip install nose`.)
+The easiest way to run your development version of Snakemake is perhaps to go to the folder containing your local copy of Snakemake and call 
+
+```
+conda env create -f environment.yml -n snakemake-testing
+pip install -e .
+source activate snakemake-testing 
+```
+
+This will make your development version of Snakemake the one called when running snakemake. You do not need to run this command after each time you make code changes.
+
+From the base snakemake folder you call `python setup.py nosetest` to run all the tests. (If it complains that you do not have nose installed, which is the testing framework we use, you can simply install it by running `pip install nose`.)
 
 If you introduce a new feature you should add a new test to the tests directory. See the folder for examples.
 
-After you are done with your changes you probably want to change back to the official version of Snakemake, which is simply done by `pip uninstall snakemake; pip install snakemake`.
- 
 .. project_info-doc_guidelines:
 
 ------------------------
